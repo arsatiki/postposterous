@@ -1,8 +1,20 @@
 import requests
 import json
 import sys
+from dateutil import parser
+from dateutil.tz import gettz
 
-if len(sys.argv) < 2:
+def fix_date(s, tz):
+    if not s:
+        return None
+    return parser.parse(s).astimezone(tz)
+
+if len(sys.argv) < 3:
+    sys.exit()
+
+tz = gettz(sys.argv[2])
+if tz is None:
+    print "Bad timezone"
     sys.exit()
 
 vals = dict(site=sys.argv[1])
@@ -10,22 +22,11 @@ vals = dict(site=sys.argv[1])
 
 r = requests.get('http://posterous.com/api/2/sites/%(site)s/posts/public' % vals)
 print "Found", len(r.json), "items"
-print "Keys:"
-for k in sorted(r.json[0]):
-    print "-", k
-
 
 interesting =     '''
-display_date
-short_url
-id
-title
 media
 slug
-full_url
 tags
-site
-user
 replies_count
 number_of_comments
 comments_count
@@ -37,7 +38,13 @@ comments_count
 # body_html
 
 for p in r.json:
+    # Fix date
+    other = {}
+    if 'display_date' in p:
+        p['date'] = fix_date(p['display_date'], tz)
+    
     print "Post", p['title']
+    print "Date", p['date']
     for k in interesting:
         print k, p[k]
     print
