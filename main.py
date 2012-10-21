@@ -3,6 +3,7 @@ import json
 import sys
 from dateutil import parser
 from dateutil.tz import gettz
+import os
 
 def fix_date(s, tz):
     if not s:
@@ -21,45 +22,43 @@ def get_posts(site):
         p.extend(r.json)
         page += 1
     return p
-    
 
-if len(sys.argv) < 3:
-    sys.exit()
+def write(site, p):
+    slug = p['slug']
+    path = '%s/%s' % (site, slug)
+    root = os.getcwd()
+    os.makedirs(path)
+    os.chdir(path)
+    with open('post.html', 'w') as f:
+        f.write(p['body_cleaned'])
+    with open('metadata.yaml') as f:
+        if 'date' in p:
+            f.write("date: %(date)s\n" % p)
+    # TODO
+    # Photos
+    # Comments
+    os.chdir(root)
 
-tz = gettz(sys.argv[2])
-if tz is None:
-    print "Bad timezone"
-    sys.exit()
+def main():
+    if len(sys.argv) < 3:
+        sys.exit()
 
-vals = dict(site=sys.argv[1])
+    tz = gettz(sys.argv[2])
+    if tz is None:
+        print "Bad timezone"
+        sys.exit()
 
-posts = get_posts(sys.argv[1])
+    site = sys.argv[1]
 
-print "Found", len(posts), "items"
+    posts = get_posts(site)
 
-interesting =     '''
-media
-slug
-tags
-replies_count
-number_of_comments
-comments_count
-'''.split()
-# bodies:
-# body_full
-# body_excerpt
-# body_cleaned
-# body_html
+    print "Found", len(posts), "posts"
+    for p in posts:
+        if 'display_date' in p:
+            p['date'] = fix_date(p['display_date'], tz)
 
-for p in posts:
-    # Fix date
-    other = {}
-    if 'display_date' in p:
-        p['date'] = fix_date(p['display_date'], tz)
-    
-    print "Post", p['title']
-    print "Date", p['date']
-    for k in interesting:
-        print k, p[k]
-    print
+        print "Processing", p['slug']
+        write(site, p)
 
+if __name__ == "__main__":
+    main()
