@@ -4,6 +4,7 @@ import sys
 from dateutil import parser
 from dateutil.tz import gettz
 import os
+import codecs
 
 def fix_date(s, tz):
     if not s:
@@ -25,15 +26,19 @@ def get_posts(site):
 
 def write(site, p):
     slug = p['slug']
-    path = '%s/%s' % (site, slug)
+    ymd = p['date'].strftime("%Y-%m-%d")
+    path = '%s/%s-%s' % (site, ymd, slug)
     root = os.getcwd()
-    os.makedirs(path)
+    try:
+        os.makedirs(path)
+    except OSError:
+        pass
     os.chdir(path)
-    with open('post.html', 'w') as f:
+    with codecs.open('post.html', 'w', 'utf-8') as f:
         f.write(p['body_cleaned'])
-    with open('metadata.yaml') as f:
-        if 'date' in p:
-            f.write("date: %(date)s\n" % p)
+    with codecs.open('metadata.yaml', 'w', 'utf-8') as f:
+        f.write("title: %(title)s\n" % p)
+        f.write("date: %(date)s\n" % p)
     # TODO
     # Photos
     # Comments
