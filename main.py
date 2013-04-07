@@ -1,3 +1,4 @@
+# encoding: utf-8
 import requests
 import json
 import sys
@@ -24,6 +25,17 @@ def get_posts(site):
         page += 1
     return p
 
+def write_images(p):
+    images = p['media']['images']
+    for img in images:
+        url = img['full']['url']
+        _, _, filename = url.rpartition('/')
+        print '\t', filename
+        
+        r = requests.get(url)
+        with open(filename, 'w') as f:
+            f.write(r.content)
+
 def write(site, p):
     slug = p['slug']
     ymd = p['date'].strftime("%Y-%m-%d")
@@ -39,13 +51,14 @@ def write(site, p):
     with codecs.open('metadata.yaml', 'w', 'utf-8') as f:
         f.write("title: %(title)s\n" % p)
         f.write("date: %(date)s\n" % p)
+    write_images(p)
     # TODO
-    # Photos
     # Comments
     os.chdir(root)
 
 def main():
     if len(sys.argv) < 3:
+        print "Usage: main.py site timezone"
         sys.exit()
 
     tz = gettz(sys.argv[2])
