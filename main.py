@@ -2,11 +2,18 @@
 import requests
 import json
 import sys
+import datetime
 from dateutil import parser
 from dateutil.tz import gettz
 import os
 import codecs
 from contextlib import contextmanager
+
+class TZEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return str(obj)
+        return json.JSONEncoder.default(self, obj)
 
 @contextmanager
 def chdir(path):
@@ -55,6 +62,8 @@ def write(site, p):
     slug = p['slug']
     ymd = p['date'].strftime("%Y-%m-%d")
     with chdir('%s/%s-%s' % (site, ymd, slug)):
+        with open('dump.json', 'w') as f:
+            json.dump(p, f, cls=TZEncoder)
         with codecs.open('post.html', 'w', 'utf-8') as f:
             f.write(p['body_cleaned'])
         with codecs.open('metadata.yaml', 'w', 'utf-8') as f:
