@@ -64,14 +64,15 @@ def write(site, p):
     with chdir('%s/%s-%s' % (site, ymd, slug)):
         with open('dump.json', 'w') as f:
             json.dump(p, f, cls=TZEncoder)
+        if p['comments']:
+            with open('comments.json', 'w') as f:
+                json.dump(p['comments'], f, cls=TZEncoder)
         with codecs.open('post.html', 'w', 'utf-8') as f:
             f.write(p['body_cleaned'])
         with codecs.open('metadata.yaml', 'w', 'utf-8') as f:
             f.write("title: %(title)s\n" % p)
             f.write("date: %(date)s\n" % p)
         write_images(p)
-    # TODO
-    # Comments
 
 def main():
     if len(sys.argv) < 3:
