@@ -1,0 +1,14 @@
+<p>The first few chapters are 100% pure introduction. Definitions, discussion, algorithm analysis etc. Useful stuff and worth reviewing once in a while.</p></p><p><p>There are two sorting algorithms given: insertion sort and merge sort. Given that Python lists have <code>sort</code> built-in, reproducing them precisely here is somewhat silly. So I’ll do some a simple variation.</p></p><p><p>For example, if we do not require that the insertion sort sorts in place, we can use it to sort iterables into a new list. There is a builtin for that as well, namely <code>sorted</code>. Whatever I do, it seems to be already implemented.</p></p><p><code>def insertion_sort(it):
+    """insertion_sort(iterable) -&gt; sorted list</p><p>Note that this is very much like the builtin function sorted.</p><p>&gt;&gt;&gt; insertion_sort((10, 1, 3, 5, 2))
+    [1, 2, 3, 5, 10]</p><p>&gt;&gt;&gt; insertion_sort((31, 41, 59, 26, 41, 58))
+    [26, 31, 41, 41, 58, 59]</p><p>"""</p><p>it = iter(it)
+    result = [it.next()]
+    for index, val in enumerate(it):
+        i = index
+        result.append(val)
+        while i &gt;= 0 and result[i] &gt; val:
+            result[i+1], i = result[i], i-1
+        result[i+1] = val</p><p>return result</code></p><p><p>There’s a lovely sentence at the start of the summary:</p></p><p><blockquote class="posterous_short_quote">
+  <p>A good algorithm is like a sharp knife — it does exactly what it 
+  is supposed to do with a minimum amount of applied effort.</p>
+</blockquote>

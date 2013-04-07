@@ -1,0 +1,59 @@
+<p>Hello!</p>
+<p>I am currently at page 77. The discussion is more theoretical (orders of growth, recurrences &amp;c.) and thus there is less stuff to re-implement. Of course, the tools given in the initial pages are among the most important ones in the book. Just not very bloggable. Go on, read'em! Don't just wait here!</p>
+<p>However, to keep my fingers warm, I'll do an iterator version of <code>merge</code> (of <code>merge-sort</code> -fame). It takes two sorted iterators and returns one that has the input merged together.</p>
+<p>This version, called <code>merged</code> is actually slightly more difficult than doing it with simple lists. You can always “peek” at the start of the list or check if there are any elements left. Not so with iterators. To reduce the pain I'll create a simple wrapper class for the iterator.</p>
+<div class="CodeRay">
+  <div class="code"><pre>[code lang='python']
+class Wrapper(object):
+      """A wrapper for iterable objects. Allows peeking and testing for emptiness.
+      &gt;&gt;&gt; g =Wrapper(range(10))
+      &gt;&gt;&gt; g.has_items
+      True
+      &gt;&gt;&gt; tuple(g)
+      (0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+      &gt;&gt;&gt; g.has_items
+      False
+      &gt;&gt;&gt; e =Wrapper([])
+      &gt;&gt;&gt; e.has_items
+      False
+     """
+      def __init__(self, it):
+          self.it = iter(it)
+          self.has_items = True
+          self._setvalue()
+      def _setvalue(self):
+          try:
+              self.value = self.it.next()
+          except StopIteration:
+              self.has_items = False       # To simplify the for-loop
+      def __nonzero__(self):
+          return self.has_items
+      def peek(self):
+          return self.value
+      def __iter__(self):
+          return self
+      def next(self):
+          if not self.has_items:
+              raise StopIteration
+          old_val = self.value
+          self._setvalue()
+          return old_val 
+[/code]</pre></div>
+</div></p><p><p>Slightly verbose but does the trick. I originally misspelled <code>__nonzero__</code>, which created an interesting bug. The <code>StopIteration</code> exception was not caught and the entire iterator stopped cold after either of the input streams was finished. Remember count those underscores...</p>
+<p>Note that there are several ways to construct a wrapper that supports some of the basic operations needed for this task. I feel that this is the cleanest approach. (Please prove me wrong!)</p>
+<div class="CodeRay">
+  <div class="code"><pre>[code lang='python']
+def merged(i1, i2):
+     """merge(sorted iterable1, sorted iterable2) -&gt; new sorted iterable
+      &gt;&gt;&gt; list(merged((1, 5, 9), (2, 4, 10))))
+     [1, 2, 4, 5, 9, 10]
+      &gt;&gt;&gt; "".join(merged('abbg', 'gnoux'))
+     'abbggnoux'
+      """
+     i1 = Wrapper(i1)
+     i2 = Wrapper(i2)
+     while i1 and i2:
+         if i1.peek() </pre></div>
+</div></p><p><p>It is possible to extend <code>merged</code> to merge several iterators at once. Left as an exercise.</p>
+<p>For finite <em>unsorted</em> iterators you can use a combination of <code>itertools.chain</code> and <code>sorted</code>.</p>
+<p> </p>
