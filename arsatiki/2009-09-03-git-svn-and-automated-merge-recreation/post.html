@@ -1,0 +1,31 @@
+<p><strong>Note! New git versions can use svn:mergeinfo properly. This advice is probably useless now</strong>.</p>
+<p>At work I use git-svn to access our SVN repository. We use the common two-branch workflow with SVN: one stable branch and one development branch.</p>
+<p>Most of the time this works out pretty well. I get to use git and enjoy most of its potential. My coworkers wouldn't even have to notice that I'm using something other than the stock SVN client. However, the occasional spree of 12 commits via dcommit blows my cover. That and the smug impression on my face.</p>
+<p>The biggest snake in my VCS paradise is the fact that git-svn just does not get merges made in SVN. It will happily think the two development lines are wholly separate. This bugs me on two levels. First of all, it annoys me on theoretical level. I want my commit graph to be as complete as possible, dammit. I may have OCD.</p>
+<p>There is also a more pragmatic reason. Once in a while I too like to make merges. And merges are so so so much easier when your ancestor information is correct. Just like Linus intended.</p>
+<p>Fortunately recreating the SVN merge is as easy as 1-2-3. And 4. First, here's the image labelled “Before”.</p>
+<p><span data-type="image" data-full-url="http://getfile8.posterous.com/getfile/files.posterous.com/temp-2010-04-27/EsuesucdBxDEIiAtkHnkypgHlDICgIzzqdhtyoJhtDFHpnhxtmoEvtmJvsma/before.png.scaled500.png" data-gallery-id="6176233" data-thumb-url="http://getfile9.posterous.com/getfile/files.posterous.com/temp-2010-04-27/EsuesucdBxDEIiAtkHnkypgHlDICgIzzqdhtyoJhtDFHpnhxtmoEvtmJvsma/before.png.thumb100.png" data-gallery-download="" data-id="8459304"></span></p>
+<div>Here's what you do.</div>
+<ol>
+<li>Take the merge commit from stable branch.</li>
+<li>Check the date of the merge-commit.</li>
+<li>Find the preceding commit from the dev branch. (In the picture, dev_head is committed in after the merge. We want dev_merge_parent)</li>
+<li>Add the hashes to the grafts-file. (If you don't know what the graft file is, check out the <a href="http://git.or.cz/gitwiki/GraftPoint" rel="nofollow">Git Wiki</a>.)</li>
+</ol><p>Great! That was easy. Now the graph looks smashing. Absolutely stunning:</p>
+<p><span data-type="image" data-full-url="http://getfile4.posterous.com/getfile/files.posterous.com/temp-2010-04-27/ppoAfdcHjvjJzyBnvGcikEvglrayzuflrvihIyekgHseoipCiBcEIizkfksJ/after.png.scaled500.png" data-gallery-id="6176232" data-thumb-url="http://getfile5.posterous.com/getfile/files.posterous.com/temp-2010-04-27/ppoAfdcHjvjJzyBnvGcikEvglrayzuflrvihIyekgHseoipCiBcEIizkfksJ/after.png.thumb100.png" data-gallery-download="" data-id="8459303"></span></p>
+<p>Note that you must specify all parents in the grafts file. If you only specify the new one, the real children are banished into the woods where they'll meet an old woman in a gingerbread house. But I digress. Also, apparently grafts don't survive cloning. This does not matter if you are the only one using the repository. If you ever want to migrate to git from SVN, run your repo through with filter-branch. Filter-branch respects grafts and rewrites them as proper children.</p>
+<p>So this is what I've done lately. By hand.</p>
+<p>That gets old pretty fast. I've been planning on automating either the whole process or significant parts of it for a while now. Unfortunately I have not wanted to waste neither my personal nor my employer's time on the problem. Until today. A last minute showstopper bug postponed our deployment until tomorrow morning. In my case, this meant two idle hours.</p>
+<p>My first attempt was to do the whole thing as one git-alias. A simple shell script oughta do it. Yeah right. Apparently I had forgotten the correct offerings to appease the Gods of Bash and oh boy are they a bunch of vindictive deities. Also, I suck at shell.</p>
+<p>After an hour and half and some advice from smarter haxx0rs I had my git aliases in place. I'll share them here with you. Lines split for display.</p>
+<div class="CodeRay">
+  <div class="code"><pre>[alias]
+    show-timestamp = log -n 1 --format='%at'
+    find-other-branch-parent = "!f() { git rev-list -n 1
+        --min-age=`git show-timestamp $1` $2; }; f"
+    show-graft = "!f() { echo `git rev-list -n 1 --parents $1`
+        `git find-other-branch-parent $1 $2` ;}; f"</pre></div>
+</div></p><p><p>And here's how to use them:</p>
+<div class="CodeRay">
+  <div class="code"><pre>git show-graft merged_commit dev_branch</pre></div>
+</div></p><p><p>You can pretty safely redirect the output to .git/info/grafts. If you have any ideas how to streamline this further, I'd be happy to hear!</p>

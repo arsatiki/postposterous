@@ -1,0 +1,92 @@
+<p>At my last employer I looked briefly into <a href="http://en.wikipedia.org/wiki/A/B_testing" rel="nofollow">A/B tests</a>. Many of the proposed solutions rely on classical statistical tests, such as the z-test or G-test. These tests are not very appealing to me. They solve an approximate problem exactly; I prefer the converse.</p>
+<div> </div>
+<div>To my delight, I found a three-part series by Sir Evan Haas, which discussed using Bayesian inference on A/B tests. Sadly, only <a href="http://sirevanhaas.com/?p=30" rel="nofollow">parts I</a> and <a href="http://sirevanhaas.com/?p=64" rel="nofollow">part II</a> are available. The blog seems to have died out before part III ever came out. Part II ended with a cliffhanger: a hairy integral and a promise "solved in Part III". </div>
+<div> </div>
+<div>For the last year and a half I've thought about the problem on and off. WolframAlpha could not solve the integral in a meaningful fashion. I plotted the joint probability distribution with R, but this left me wanting more.</div>
+<div> </div>
+<div>A month ago I bumped into Bayesian networks (although I prefer "probabilistic graphical models"). This triggered a problem solving cascade in my mind. I finally managed to crack the problem! Both approximately and exactly! Oh happy times! Oh groovy times!</div>
+<div> </div>
+<div><strong>A simple variant</strong></div>
+<div> </div>
+<div>In his articles, Evan considers the whole joint probability distribution at once. That approach leads quickly into a mathematical briar patch with eye-poking indices and double integrals. However, the thorny mess becomes simpler with some theory.</div>
+<div> </div>
+<div>So let us look at a simpler case–estimating the conversion rate for only one alternative. More precisely, what do we know about the conversion rate, if we've seen <em>s</em> conversions out of <em>n</em> trials? How is the probability distributed?</div>
+<div> </div>
+<div>This is incidentally the oldest trick in the book. I mean this literally. The essay, in which Thomas Bayes debuted his formula, was dedicated to finding out the answer to this very question. <a href="http://www.stat.ucla.edu/history/essay.pdf" rel="nofollow">The essay</a> is available on the Internet.</div>
+<div> </div>
+<div>I will use different symbols than Evan does. Sorry about that. The unknown conversion rate is denoted by <em>r.</em> Our data consists of the number of successes <em>s</em> and the number of failures <em>f</em>  in <em>n</em> trials. Note that <em>n</em> =<em> s</em> + <em>f</em>.</div>
+<div> </div>
+<div>Let's use the same binomial model as Evan for our likelihood. That is, we assume the number of successes<em> s</em> to be distributed according to the binomial distribution: <em>s ~ B</em>(<em>s </em>+<em> f, r</em>).</div>
+<div> </div>
+<div>At this point I found the missing ingredient: <a href="http://en.wikipedia.org/wiki/Conjugate_prior" rel="nofollow">conjugate priors</a>. A conjugate prior means that our posterior "looks the same" as the prior itself. Both the posterior and the prior belong to a "same family." Their difference is usually in the parameters of the distribution. This allows algebraically nice updating rules for the posterior. In this case, the rules are very very pleasant.</div>
+<div> </div>
+<div>The conjugate prior for the binomial distribution is the beta distribution Be(<em>α, β</em>). Limiting our prior in this way seems foolish and constricting. What if there are no sane parameter choices for the prior? Fear not! The Be(1, 1) distribution is the same as the uniform distribution over (0, 1). It is a good choice for this application, where we do not know anything about the conversion rate.</div>
+<div> </div>
+<div>The updating rule for the posterior is now exceedingly simple:</div>
+<div> </div>
+<div>
+<em>r</em> ~ Be(<em>s </em>+ 1, <em>f</em>  + 1)</div>
+<div> </div>
+<div>In general, if our prior is distributed according to Be(<em>α, β</em>), then the posterior is</div>
+<div> </div>
+<div>
+<em>r</em> ~ Be(<em>α</em> + <em>s, β</em> + <em>f</em>)</div>
+<div> </div>
+<div>This is a wonderful result. We can mostly omit the Bayesian mechanism that led us here. Instead, we can simply use the beta distribution! (Turns out that people in medicine and other fields have known this result for ever.)</div>
+<div> </div>
+<div><strong>Example time</strong></div>
+<div> </div>
+<div>Let's assume we've seen 5 conversions out of 100 trials. This means that <em>s</em> = 5 and <em>f</em> = 100-5 = 95. You can use WolframAlpha for plotting.</div>
+<div>
+<a href="http://www.wolframalpha.com/input/?i=BetaDistribution%5B6,+96%5D" rel="nofollow"><span data-type="image" data-full-url="http://getfile5.posterous.com/getfile/files.posterous.com/arsatiki/UrEGTyuSjt7IAeUWUUwu8FWfKSW0cWJd9OGu1rKB9bjqc4eWJ10v1HvlXIkt/wolframalpha-20111203061804543.gif.scaled.500.jpg" data-gallery-id="25570602" data-thumb-url="http://getfile9.posterous.com/getfile/files.posterous.com/arsatiki/JxKMvd65tBQll3hArB45h4Cz9SEIUlUlK9AUWPLuP4QcIOH6WB8kA25sSkqI/wolframalpha-20111203061804543.gif.thumb100.jpg" data-gallery-download="" data-id="36128048"></span></a><a href="http://www.wolframalpha.com/input/?i=BetaDistribution%5B6%2C96%5D" rel="nofollow">Link to full results</a>.</div>
+<div> </div>
+<div>The true conversion rate seems to lie between 0 and 0.15. The mean is 0.056, which sounds reasonable.</div>
+<div> </div>
+<div>If we have more data, our estimate improves. For 50 conversions and 1000 trials, we get the following PDF:</div>
+<div><span data-type="image" data-full-url="http://getfile2.posterous.com/getfile/files.posterous.com/arsatiki/DZj6juc7ogwtFsPy4zMhfGe18WlWrkbW81eeFsxkn1A7ioFDatQejkkztMBH/wolframalpha-20111203062445727.gif.scaled.500.jpg" data-gallery-id="25570603" data-thumb-url="http://getfile5.posterous.com/getfile/files.posterous.com/arsatiki/MzvGwjqUs013DZi6O8qctcAPiI2KePrRzkdBn311ekaaiAHJzRGqTkSKztmO/wolframalpha-20111203062445727.gif.thumb100.jpg" data-gallery-download="" data-id="36128049"></span></div>
+<div>The probability mass is now very sharply centered around 0.05.</div>
+<div> </div>
+<div><strong>Numerical solutions to the full problem</strong></div>
+<div><strong><br /></strong></div>
+<div>Since we now have a handle what happens with a single variant, let's crack the full problem. Given the successes <em>s₁</em>, <em>s₂</em> and respective failures <em>f₁</em>, <em>f₂</em> for the two variants, what is the probability P(<em>r₁</em> &gt; <em>r</em>₂)? This is the 2D integral in Evan's Part II. (I'm not going to repeat it here.)</div>
+<div> </div>
+<div>Originally I solved the question by integrating the joint distribution numerically over a 100 x 100 grid. If  This gives rather good results. Sadly, I can not find the code I used.</div>
+<div> </div>
+<div>After discovering that the distribution is a joint distribution of two independent beta distributions, I realized I can also use simulation. This is conceptually super simple.</div>
+<div> </div>
+<div>First, generate <em>N</em> pairs of random samples from the joint distribution. Since they are independent, you need only pick the first item in the pair from the first beta distribution and similarly for the second item. You may need to generate a lot of samples, if the two rates are close to each other.</div>
+<div> </div>
+<div>Count how many of the pairs have the first number greater than the second. Let us call this number <em>k</em>.</div>
+<div> </div>
+<div>Then you can get the estimate for the probability P(<em>r₁</em> &gt; r₂) simply dividing <em>k</em> / <em>N</em>.</div>
+<div> </div>
+<div>Below is a simple implementation in Python:</div>
+<div> </div>
+<div><a href="https://gist.github.com/1395348/6dccd38d608437ccd1a9a15aa856b326e86898ce" rel="nofollow">https://gist.github.com/1395348/6dccd38d608437ccd1a9a15aa856b326e86898ce</a></div>
+<div> </div>
+<div><strong>An exact solution! Hallelujah!</strong></div>
+<div><strong><br /></strong></div>
+<div>First of all, don't thank me. Thank John D. Cook. <a href="http://www.johndcook.com/blog/2008/08/21/random-inequalities-v-beta-distributions/" rel="nofollow">His article about random inequalities</a> contained the hint that when one of the parameters is an integer, we can compute a closed solution. One? <em>All of our parameters are integers!</em>
+</div>
+<div><em><br /></em></div>
+<div>My solution follows the mathematical form given in the <a href="http://www.mdanderson.org/education-and-research/departments-programs-and-labs/departments-and-divisions/division-of-quantitative-sciences/research/biostats-utmdabtr-005-05.pdf" rel="nofollow">linked PDF article</a>. The code is below.</div>
+<div> </div>
+<div><a href="https://gist.github.com/1395348/f0275f529d322d3c23e18201f26890f5a09dcb51" rel="nofollow">https://gist.github.com/1395348/f0275f529d322d3c23e18201f26890f5a09dcb51</a></div>
+<div> </div>
+<div>The code is a rather straightforward translation. I'd rather have used recursion, but the Python call stack blows up when <em>d</em> is anything significant.</div>
+<div> </div>
+<div>Also note that my code is numerically insane (and slow). If you wanted to do this for a living, you'd better use the lgamma function to compute the logarithm of the gamma function. Gamma functions are in effect factorials. They grow very very fast; a float or even a double will overflow  quickly.  For example, the g0 function would be</div>
+<div> </div>
+<div>exp(lgamma(a+b) + lgamma(a+c) - lgamma(a+b+c) - lgamma(a)).</div>
+<div> </div>
+<div>You'd also want to use the permutation tricks mentioned in the article to recurse on the smallest parameter.</div>
+<div> </div>
+<div><strong>Summary</strong></div>
+<div><strong><br /></strong></div>
+<div>
+<ul>
+<li>The distribution of the conversion rate for one variant is the beta distribution. (This applies when our model is the binomial model. More complex approaches are of course possible.)</li>
+<li>You can solve P(A &gt; B) it numerically (in two ways) or exactly.</li>
+<li>These are all known results.</li>
+</ul>
+</div>

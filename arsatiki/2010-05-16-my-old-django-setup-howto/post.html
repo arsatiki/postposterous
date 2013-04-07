@@ -1,0 +1,145 @@
+<p>This article dates from early 2008. I've kept a link to it on my home page, but felt it was now time to update it. Django has moved forward and my understanding of the Django way has moved forward.</p>
+<p>If you want more information, Zach Voase has written much about <a href="http://blog.zacharyvoase.com/2010/02/03/django-project-conventions/" rel="nofollow">Django project conventions on his blog</a>. Please do check that resource out first. I do not agree with all of his points, however. Use your own judgment.</p>
+ Almost project-free Django 
+<p>In late 2007 I read <a href="http://www.b-list.org/weblog/2007/nov/09/projects/" rel="nofollow">two</a> <a href="http://www.pointy-stick.com/blog/2007/11/09/django-tip-developing-without-projects/" rel="nofollow">articles</a> about developing Django without projects. Both James and Malcolm usually know what they are writing about. But surely there must be a point of using projects — why else would they be there?</p>
+<p>The following is a brief summary of my understanding of the matter. I will first explain the different components of a Django environment and then explain how I’ve set things up.</p>
+ Django bits 
+<p>There are five major components in a Django website: projects, apps, templates, static media, and of course, the database. In a production environment all these can be placed independently. This division forms the framework of my Django setup.</p>
+<p>Each component has clearly separate roles in the loosely coupled world of Django. Let’s look at each one.</p>
+ The project 
+<p>Instead of using the term “project”, I prefer the term “site configuration”. I was tempted to use “(site) configuration” throughout this text, but at the last stage decided against it. “Project” is what the Django world uses and so will I.</p>
+<p>So projects define a configuration. That’s cool. What exactly do they configure? Almost everything.</p>
+<ul>
+<li>The apps running on the site</li>
+<li>The middleware</li>
+<li>The details of the database</li>
+<li>The URL mapping (although it <em>may</em> be deferred to apps, see below)</li>
+<li>The locations of static media</li>
+<li>The location of the templates (also may be deferred to apps)</li>
+<li>Several smaller details, such as timezones</li>
+</ul><p>Despite the lenghty list of responsibilities, the projects can be very slim. My project skeleton contains only <code>settings.py</code> and <code>urls.py</code> (and obviously <code>manage.py</code> and <code>__init__.py</code>). Settings import a global settings file called <code>site_settings.py</code> and <code>urls.py</code> includes the URL definitions in the apps themselves.</p>
+<p>It is possible to put more stuff in projects: fixtures, templates, even apps. However, I prefer to keep mine clean and only add cruft to a project directory only when it is only related to that project. For example, I’ll add a template directory for those apps that do not have their own templates. More on this below.</p>
+<p>Since a project is a configuration, it naturally differs between a production server and a development box. This has implications for the organization of <code>settings.py</code> and also for version control. I am against the idea of using Python if statements to segment the <code>settings.py</code> for different environments.</p>
+<p>My current (2010) approach is to have a separate settings-file for each environment and a "common" settings file. The environment specific files may import the common settings or choose to ignore them altogether. All these files should be in the version control system.</p>
+<p>Another workable solution is presented by Zachary Voase in the article "<a href="http://blog.zacharyvoase.com/2009/09/10/django-settings-flavours/" rel="nofollow">Django Settings Flavours"</a>.</p>
+ Apps 
+<p>First and foremost, apps provide the models. They are the metaprogrammatic heart of a Django setup. They provide the interface to the database. They give us fields to use in the templates.</p>
+<p>Apps also provide views. While views are at the center of the MVT paradigm, you can skip a lot of programming there. Generic views, wrappers to generic views and custom managers will often suffice.</p>
+<p>Models, views… guess what! Apps can also contain templates. The default template loaders — specified <em>in the project</em> — are <code>django.template.loaders.filesystem.load_template_source</code> and <code>django.template.loaders.app_directories.load_template_source</code>. The filesystem loader looks in the directories specified with <code>TEMPLATE_DIRS</code>. The latter looks for a <code>templates</code> subdirectory in every installed app. The default order is the one listed. (And <em>of course</em> you can override it.)</p>
+<p>This means that your app can offer a set of default templates. In some cases this is just what the doctor ordered. If your application is running on only one site, then there is just one set of templates that make sense. Remember to use some kind of an organization there, however. If you have three apps that all refer to their a template called <code>main.html</code>, two of them probably get the wrong template. <code>app_label/main.html</code> is not a bad naming choice.</p>
+<p>Some apps need no templates. Neither <code>django-registration</code> nor <code>django-tagging</code> bother with them. Some apps —like Django admin— provide templates but allow you to override them.</p>
+<p>In most cases apps will also provide an url mapping. This promotes loose coupling. Loose coupling is good. Note that the project can choose not to include those mappings and specify their own. Whether this is a good idea or not depends on the app. Think about the consequences.</p>
+<p>Oh yes. The app can also contain managers, forms, template tags and more. Listen to your gut. If it’s app specific, store it in the app. If it’s not, store it somewhere in your <code>PYTHONPATH</code>.</p>
+ Templates 
+<p>I’ve already yakked about templates and there is not much to add. In my world view templates are specific to either an app or to a project. The latter case is simple. Create a <code>templates</code> subdirectory in your project directory and add it to <code>TEMPLATE_DIRS</code>.</p>
+<p>Here’s a tip: I use a Python function to get the absolute directory of the current settings file. This both saves some typing and makes the whole thing slightly more portable. I also recommend using something like the <a href="http://pypi.python.org/pypi/path.py" rel="nofollow">path.py</a>.</p>
+<p>I also have a site-wide template directory just in case the above scheme proves to be insufficent. At the moment it is empty.</p>
+ Static media 
+<p>For some reason static media with Django is seen as difficult. It does require some thinking and studying, yes. But difficult? No.</p>
+<p>The important thing is to remember that on the production server, static media should be served by a real webserver. In other words, static media is deployed to a different location than templates. Or apps. Or projects. The development setup should reflect this.</p>
+<p>I am lazy. On my development computer, I use sqlite instead of a real database. When I first wrote this article, I used <a href="http://www.djangoproject.com/documentation/static_files/" rel="nofollow">django.views.static.serve</a> to serve my static media. In my global development URL mapping file <code>^static/(?P.*)$</code> serves stuff from a directory on my hard drive. <code>MEDIA_URL</code> is <code><a href="http://localhost:8000/static/" rel="nofollow">http://localhost:8000/static/</a></code>. (Well okay. Plain <code>/static/</code> is slightly better, since it allows people connect to your development box and see the media too.)</p>
+<p>These days I am more inclined to use OS X built-in Apache to serve my media files. This reduces the amount of stuff happening in the debug server.</p>
+<p>On a production server, things are different. The static stuff might even be on a different server altogether, say <code><a href="http://static.phrasebook.hu" rel="nofollow">static.phrasebook.hu</a></code>. There is no URL mapping to <code>django.views.static.serve</code>. That is handled by Apache. The relevant configuration is somewhere in the Apache confs.</p>
+<p><code>MEDIA_URL</code> <em>is</em> specified, however. It points to <code><a href="http://static.phrasebook.hu/" rel="nofollow">http://static.phrasebook.hu/</a></code>.</p>
+<p>Why this fuss about <code>MEDIA_URL</code>? Because modern Django (post-SVN-revision 5379) gives you, by default, a <code>context_processor</code> that inserts <code>MEDIA_URL</code> into your context. That means you can write <code><img src="%7B%7BMEDIA_URL%7D%7Dpics/ugly.gif" /></code>. No hard-coded links. All you need to do is change one line in your settings. Very DRY. Read more details in the last section of “<a href="http://www.unessa.net/en/hoyci/2008/01/offline-development-with-django/" rel="nofollow">Offline Development With Django</a>”.</p>
+<p>Just in case you wonder, <code>MEDIA_ROOT</code> is the place where the uploaded stuff ends up in. Some people use it as the <code>doc_root</code> in their static serve URL mapping. I don’t.</p>
+ Database 
+<p>My opinions on this section have changed over time. Fixtures and testing have made me appreciate more modular database setups. In the end, there is no best setup for everyone. Also, the new multi-DB support in Django 1.2 again shuffles the deck.</p>
+<p>Think about the following issues when planning the DB setup:</p>
+<ul>
+<li>interop between the Django sites -- do they share data or not</li>
+<li>the number of Django sites you are developing at the sime time</li>
+<li>the requirements of the different deployment environments</li>
+<li>scaling &amp; site architecture questions.</li>
+</ul><p>For private development, these instructions are still usable:</p>
+<blockquote class="posterous_medium_quote">
+<p>It’s hard to go wrong with the database settings. However, since I use sqlite, my initial Django projects ended up containing the database file as well. In retrospect that was a dumb move.</p>
+<p>These days I specify the database in my <code>site_settings.py</code>. Project settings import it.</p>
+<p>And if you haven’t guessed it yet, this configuration looks different on the production server.</p>
+</blockquote>
+ My development setup 
+<p>In the previous edition I advocated a single django directory. Since then I have discovered <a href="http://pypi.python.org/pypi/virtualenv" rel="nofollow">virtualenv</a>. It is hugely superior to my old approach.</p>
+<p>In a nutshell, virtualenv creates a sandbox for Python packages. This frees me from worrying about possible incompatibilities when one site wants Django 1.0 and another one lives on the 1.2 beta edge. In conjunction with <a href="http://pypi.python.org/pypi/pip/0.7.1" rel="nofollow">pip</a> it also frees me from the chore of managing the PYTHONPATH myself. If you are familiar with Python but not virtualenv, think project specific site-packages.</p>
+<p>Pip can install most things I need in the project. These include Django itself, any external apps (such as django-registration) and possibly some infrastructure components. These are all stored inside the virtualenv. There are some components I install to the common site-packages directory, namely MySQL wrappers and the like.</p>
+<p>Pip also knows how to install stuff from different version control systems. Thus, if you need your own variant of an external app, you can clone or copy it and store it in your own repository. Git and Mercurial shine with this as it is easy to track the original development as well. But it is also possible with SVN, if you are willing to suffer the extra work.</p>
+<p>These days, most of my Python work starts with the following steps:</p>
+<div><ol>
+<li>Create a git repository</li>
+<li>Create a virtualenv. I use mkvirtualenv, which is part of the useful virtualenvwrapper.</li>
+<li>Install any packages I need.</li>
+<li>pip freeze &gt; requirements.txt, some editing and commit.</li>
+<li>If I need to edit the PYTHONPATH, I use the .pth files inside the virtualenv directory. Virtualenvwrapper provides add2virtualenv tool for this.</li>
+</ol></div>
+<p>Enough gushing about pip. Let's get to the details.</p>
+<p>My apps live in their own directory. If I need any them, I'll add the apps directory to the virtualenv's PYTHONPATH. If the apps are packaged and published in PyPI, you can just use pip to fetch them. I have nothing in PyPI yet. Can't really comment on that.</p>
+<p>The apps don't have to be inside the django main directory, but this is how I've structured my work. At work we use a slightly different scheme, which fits better with our version control practices.</p>
+<ul>
+<li>django/            
+<ul>
+<li>apps/            
+<ul>
+<li>ceramics_calc/</li>
+<li>misc_app/</li>
+<li>stufflister/            
+<ul>
+<li>templates/</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>sqlite.db</li>
+<li> etc/            
+<ul>
+<li>site_settings.py</li>
+</ul>
+</li>
+<li> projects/            
+<ul>
+<li> ceramics_site/            
+<ul>
+<li> templates/            
+<ul>
+<li>ceramics_calc/*.html</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>second_site/</li>
+<li>yyz/</li>
+</ul>
+</li>
+<li> static/            
+<ul>
+<li>stufflister/*.{gif,jpg,css}</li>
+</ul>
+</li>
+<li>templates/ </li>
+</ul>
+</li>
+</ul><p>The main benefits of this approach are:</p>
+<ul>
+<li>I can see my apps at a glance (either <code>ls</code> or from Finder)</li>
+<li>I can see my projects at a glance</li>
+<li>Apps and projects are decoupled</li>
+</ul><p>My (virtualenv) <code>PYTHONPATH</code> contains two additional entries:</p>
+<p><code>~/django/apps</code> for easy app importing.<br /><code>~/django/etc</code> for miscellaneous stuff that needs importing.</p>
+<p>The Django tutorial uses the name of the project directory a lot. Practically every example begins with <code>mysite</code>: <code>mysite.urls</code>, <code>mysite.views.polls.vote</code>, … <strong>Don’t do that.</strong> Take control of your namespace! For all intents and purposes, the projects should be anynomous. Apps and settings should not contain any reference to the name of the project directory.</p>
+<p>Having your apps in the <code>PYTHONPATH</code> solves this. I recommend it without hesitation.</p>
+<p>If you are worried about namespace pollution, you can solve that by creating modules inside <code>apps/</code>.  In the near <code>__future__</code> Python will have a slightly different <code>import</code> policies. See <a href="http://www.python.org/dev/peps/pep-0328/" rel="nofollow">PEP 328</a>.</p>
+<p>As I said above, my views on settings have changed. The following instructions are outdated but I'll leave them here for laughs.</p>
+<blockquote>
+<p>Finally I’ll introduce my <code>site_settings.py</code>. It defines the following settings:</p>
+<code>DEBUG</code> and <code>TEMPLATE_DEBUG</code><br /><span>ADMINS</span><br /><code>DATABASE_ENGINE</code> and other database settings<br /><code>TIME_ZONE</code> and <code>LANGUAGE_CODE</code><br /><code>MEDIA_URL</code> and <code>MEDIA_ROOT</code><br /><span>SECRET_KEY</span><br /><code>TEMPLATE_DIRS</code> (which points to the empty <code>~/django/templates</code>)<br /><code>INSTALLED_APPS</code>, which has the usual <code>contrib</code> suspects: <code>auth</code>, <code>contenttypes</code>, <code>sessions</code> and <code>sites</code><br /><p>Furthermore, it imports default settings from Django with:</p>
+<div class="CodeRay">
+  <div class="code"><pre>from django.conf.global_settings import *</pre></div>
+</div></p><p><p>Additionally there are some utility functions that allow me to use relative directory names instead of absolute names. There are many ways to solve that problem. One is to use enviroment variables like <code>DJANGOROOT</code> to specify the root (in my case <code>~/django/</code>) and use Python’s <code>os.environ</code>. Possibilities are endless.</p>
+<p>The settings for the individual projects start by importing <code>site_settings</code> and then adding to it. Some of the settings I define there are:</p>
+<code>ROOT_URLCONF</code> (This is often <code>'urls'</code>. I might move it to <code>site_settings</code>)<br /><code>INSTALLED_APPS = INSTALLED_APPS + (...)</code> for the apps used in this project.<br />And the same for <code>INSTALLED_MIDDLEWARE</code><br /><code>MEDIA_ROOT</code> and <code>MEDIA_URL</code> (Yes, sometimes I <em>do</em> override these)<br /><code>TEMPLATE_DIRS</code>, if necessary.<br /><p>This list depends massively on the actual project.</p>
+</blockquote>
+ Summary 
+<ul>
+<li>Projects are responsible for site configuration</li>
+<li>Projects should be anonymous</li>
+<li>Apps, projects, templates and static media should (usually) be decoupled from each other.</li>
+<li>Addenum: The previous point does not mean that they must be in separate version control repositories.</li>
+</ul>

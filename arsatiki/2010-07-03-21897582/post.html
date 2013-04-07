@@ -1,0 +1,30 @@
+<p>I am spending this July in Beijing with my wife. Beijing is in China. China filters the Internet access out of the country with the so called <a href="http://en.wikipedia.org/wiki/Great_Firewall" rel="nofollow">Great Firewall</a>.</p>
+<p>Among the many restricted sites are Wikipedia and several blogging platforms, including Posterous. I am writing a <a href="http://bjing.posterous.com" rel="nofollow">travelogue on Posterous</a>. A circumvention is needed.</p>
+<p>I suffer, however, from an even more difficult connection problem. My equipment in China consists of a Macbook Air, an iPod Touch and an iPad. None of them have  Ethernet sockets. Our Internet is provided by an PPPoE box that only has a single Ethernet cable sticking out.</p>
+<p><strong>Step 1: Sharing the Internet</strong></p>
+<p>Luckily, my wife brought her Powerbook with us. We plug the PB in via the PPPoE connection and use Internet Sharing to create a wireless network (10.0.2/24) in the apartment.</p>
+<p><strong>Step 2: Creating a SOCKS proxy</strong></p>
+<p>Traditionally I have used SSH local port forwarding to create an SSH tunnel out of a firewall. This approach requires that I have a proxy available on the other end. This time I have no knowledge of one. I could have bought a server for a month and use that as a proxy.</p>
+<p>HOWEVER. Just today I learned of SSH dynamic port forwarding, i.e. SOCKS proxies. In short, typing ssh -D9000 creates a SOCKS proxy at my localhost port 9000.</p>
+<p>This is both simpler and more flexible than local port forwarding. Each local port can only be mapped to a single endpoint outside the firewall. Dynamic port forwarding can be used to connect to any endpoint. Of course, this requires support from the application.</p>
+<p>In our case, we set up a following SSH configration on my wife’s PB:</p>
+<div class="CodeRay">
+  <div class="code"><pre>Host proxy
+HostName myhost.foo.bar
+UserName xyzzy
+DynamicForward 10001</pre></div>
+</div></p><p><p>To top it off, we set up her public DSA key on the proxy host authorized_keys. This way we can just write “ssh proxy” and everything is set up for us.</p>
+<p><strong>Step 3: Configuring the proxy on client computers</strong></p>
+<p>It is easy to configure the SOCKS proxy on my Macbook. However, both the iPad and iPod only seem to allow a HTTP proxy. To bypass this, I set up the Powerbook to serve a browser proxy auto-config file. The contents are rather simple:</p>
+<div class="CodeRay">
+  <div class="code"><pre>function FindProxyForURL(url, host) {
+    return "SOCKS 10.0.2.1:10001";
+}</pre></div>
+</div></p><p><p>This file is hosted at <a href="http://10.0.2.1/b.pac">http://10.0.2.1/b.pac</a> . I added this URL under the settings of the Wi-Fi network I had made in Step 1. Boom! Now both iThingies read the .pac file, find the SOCKS proxy config and network is browsable.</p>
+<p><strong>CAVEATS</strong>:</p>
+<ul>
+<li>Some applications just don’t plain work with SOCKS<br /><ul>
+<li>Taskpaper, Twitter clients</li>
+</ul>
+</li>
+</ul>
