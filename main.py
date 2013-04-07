@@ -6,6 +6,21 @@ from dateutil import parser
 from dateutil.tz import gettz
 import os
 import codecs
+from contextlib import contextmanager
+
+@contextmanager
+def chdir(path):
+    root = os.getcwd()
+    try:
+        os.makedirs(path)
+    except OSError:
+        pass
+    os.chdir(path)
+
+    try:
+        yield
+    finally:
+        os.chdir(root)
 
 def fix_date(s, tz):
     if not s:
@@ -39,22 +54,15 @@ def write_images(p):
 def write(site, p):
     slug = p['slug']
     ymd = p['date'].strftime("%Y-%m-%d")
-    path = '%s/%s-%s' % (site, ymd, slug)
-    root = os.getcwd()
-    try:
-        os.makedirs(path)
-    except OSError:
-        pass
-    os.chdir(path)
-    with codecs.open('post.html', 'w', 'utf-8') as f:
-        f.write(p['body_cleaned'])
-    with codecs.open('metadata.yaml', 'w', 'utf-8') as f:
-        f.write("title: %(title)s\n" % p)
-        f.write("date: %(date)s\n" % p)
-    write_images(p)
+    with chdir('%s/%s-%s' % (site, ymd, slug)):
+        with codecs.open('post.html', 'w', 'utf-8') as f:
+            f.write(p['body_cleaned'])
+        with codecs.open('metadata.yaml', 'w', 'utf-8') as f:
+            f.write("title: %(title)s\n" % p)
+            f.write("date: %(date)s\n" % p)
+        write_images(p)
     # TODO
     # Comments
-    os.chdir(root)
 
 def main():
     if len(sys.argv) < 3:
