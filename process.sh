@@ -9,5 +9,5 @@ for article in $1/*; do
 		cat $article/metadata.yaml
 		echo ---
 		pandoc -t markdown_strict $article/post.html
-	) > $target/$(basename $article).md;
+	) > $TARGET/$(basename $article).md;
 done
