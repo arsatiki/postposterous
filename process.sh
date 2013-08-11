@@ -1,6 +1,7 @@
 #!/bin/bash
 
 TARGET=hugotest/content/$1
+mkdir -p $TARGET
 
 for article in $1/*; do
 	(
