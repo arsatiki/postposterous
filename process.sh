@@ -1,9 +1,9 @@
 #!/bin/bash
 
-TARGET=hugotest/content/$1
+TARGET=content/$1
 mkdir -p $TARGET
 
-for article in $1/*; do
+for article in originals/$1/*; do
 	(
 		echo ---
 		cat $article/metadata.yaml
