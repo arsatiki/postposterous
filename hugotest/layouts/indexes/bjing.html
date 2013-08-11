@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Il Milione eli kesä 2010 Beijingissä</title>
+    <style type="text/css">
+    .index {
+    	list-style-type: circle;
+    }
+    </style>
+    <title>Il Milione eli kesä 2010 Beijingissä</title>
 </head>
 <body>
-    <ol>
+    <ol class="index">
     {{range .Data.Pages}}
         <li>{{.Date}}<a href="{{.Permalink}}">{{.Title}}</a></li>
     {{end}}
     </ol>
-    </body></html>
+</body>
+</html>
