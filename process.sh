@@ -13,6 +13,7 @@ for article in originals/$1/*; do
 		echo ---
 		cat $article/metadata.yaml
 		echo ---
-		pandoc -t markdown_strict $article/post.html
+		 
+		sed -f images.sed $article/post.html | pandoc -t markdown_strict -f html -
 	) > $TARGET/$(basename $article).md;
 done
